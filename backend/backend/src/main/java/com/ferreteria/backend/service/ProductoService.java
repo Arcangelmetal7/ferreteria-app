@@ -1,0 +1,65 @@
+package com.ferreteria.backend.service;
+
+import com.ferreteria.backend.model.Producto;
+import com.ferreteria.backend.repository.ProductoRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+//paquetes para actualizar parcialmente un producto
+import java.lang.reflect.Field;
+import org.springframework.util.ReflectionUtils;
+
+@Service
+public class ProductoService {
+
+    private final ProductoRepository productoRepository;
+
+    public ProductoService(ProductoRepository productoRepository) {
+        this.productoRepository = productoRepository;
+    }
+
+    public List<Producto> listarProductos() {
+        return productoRepository.findAll();
+    }
+
+    public Optional<Producto> obtenerProductoPorId(Long id) {
+        return productoRepository.findById(id);
+    }
+
+    public Producto guardarProducto(Producto producto) {
+        return productoRepository.save(producto);
+    }
+
+    public Producto actualizarProducto(Long id, Producto productoActualizado) {
+        return productoRepository.findById(id).map(producto -> {
+            producto.setNombre(productoActualizado.getNombre());
+            producto.setDescripcion(productoActualizado.getDescripcion());
+            producto.setPrecio(productoActualizado.getPrecio());
+            producto.setStock(productoActualizado.getStock());
+            return productoRepository.save(producto);
+        }).orElseThrow(() -> new RuntimeException("Producto no encontrado con id " + id));
+    }
+
+    public Producto actualizarParcialmente(Long id, Map<String, Object> campos) {
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+
+        campos.forEach((clave, valor) -> {
+            Field campo = ReflectionUtils.findField(Producto.class, clave);
+            if (campo == null) {
+                throw new IllegalArgumentException("Campo '" + clave + "' no es válido para el recurso Producto.");
+            }
+            campo.setAccessible(true);
+            ReflectionUtils.setField(campo, producto, valor);
+        });
+
+        return productoRepository.save(producto);
+    }
+
+
+    public void eliminarProducto(Long id) {
+        productoRepository.deleteById(id);
+    }
+}
