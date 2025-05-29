@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api/productos")
@@ -27,10 +28,11 @@ public class ProductoController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Producto> obtenerProducto(@PathVariable Long id) {
-        return productoService.obtenerProductoPorId(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        Producto producto = productoService.obtenerProductoPorId(id)
+                .orElseThrow(() -> new NoSuchElementException("Producto con ID " + id + " no encontrado"));
+        return ResponseEntity.ok(producto);
     }
+
 
     @PostMapping
     public Producto crearProducto(@RequestBody Producto producto) {
@@ -56,4 +58,7 @@ public class ProductoController {
         productoService.eliminarProducto(id);
         return ResponseEntity.noContent().build();
     }
+
+
+
 }
